@@ -1,0 +1,68 @@
+#+TITLE: Gopher Gaming
+#+AUTHOR: Martin Penckert
+
+Minimal TD game written in Go (with the amazing [[https://github.com/faiface/pixel][Pixel]] game library).
+
+* Roadmap
+
+** Grid
+
+The playing field is defined as a 2D grid. Monsters will walk on the
+grid, coming from left and trying to reach the right side.
+
+Cells on the grid may be blocked, making it necessary for the fiend to
+find a way around the obstacle.
+
+If the grid is completely blocked, the player looses all constructions
+(there must be at least one viable path for the enemies to reach their
+goal).
+
+*** DONE draw window
+*** TODO Tiled World
+**** TODO tmx support
+
+** Towers
+
+Towers are placed by the player via mouse interaction on the
+grid. Towers start shooting at fiends within their range
+automatically, favoring the closest fiend. A tower blocks one cell.
+
+*** DONE draw tower on mouse pointer position on click
+*** DONE make tower shoot on fiends in range
+*** DONE define range
+*** DONE shoot timer
+*** TODO towers should only be placed on the grid
+*** TODO tower take time to build
+*** TODO block grid cell
+*** TODO free playing field if totally blocked
+
+** Fiends
+
+Fiends spawn beyond the left limits of the screen and move (in waves)
+towards the right side of the screen. They try to find the shortest
+path possible and will follow it.
+
+If there is no viable path, all monsters will die and the player
+looses all structures (this still rewards money and might be a valid
+strategy to rebuild the field).
+
+*** DONE draw fiends
+**** TODO ... in waves
+*** DONE Health
+**** DONE Taking Damage
+***** TODO aminate
+*** DONE Death
+**** TODO animate
+*** TODO disppear after reaching the right side of the screen
+*** DONE damage
+*** TODO fiends walk on the grid
+**** TODO a-star for path-finding
+
+** Economy
+
+The player gains money for each fiend killed before it passes the right
+limits of the screen. Towers (and other structure) cost money.
+
+*** Global State for Economy
+*** Towers cost money
+*** Killing fiends provides money
