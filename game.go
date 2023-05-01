@@ -20,9 +20,27 @@ func NewGame() *Game {
 	g := &Game{}
 	g.economy = StartEconomy
 	g.health = StartHealth
-	g.grid = make([]*Tower, 0, gridW*gridH)
+	g.grid = make([]*Tower, gridW*gridH, gridW*gridH)
 	g.fiends = make(map[uuid.UUID]*Fiend, 0)
 	return g
+}
+
+// TryExact will try to place the Tower in the exact position in the
+// world grid and return the pixel position as vector, the grid
+// position in two ints and a boolean success indicator.
+func (g *Game) TryExact(m pixel.Vec) (vec pixel.Vec, gridX, gridY int, success bool) {
+	gridX = int(m.X) / gridS
+	gridY = int(m.Y) / gridS
+
+	idx := gridY*gridW + gridX
+	if idx >= gridW*gridH {
+		return pixel.Vec{}, 0, 0, false
+	}
+	if t := g.grid[idx]; t != nil {
+		return pixel.Vec{}, 0, 0, false
+	}
+
+	return pixel.V(float64(gridX*gridS), float64(gridY*gridS)), gridX, gridY, true
 }
 
 // Try to spend `amount` of economy; returns `false`, if not enough
@@ -62,7 +80,6 @@ func (g *Game) Update(win *pixelgl.Window) error {
 			g.health--
 			delete(g.fiends, id)
 		}
-
 	}
 
 	return nil

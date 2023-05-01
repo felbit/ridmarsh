@@ -18,7 +18,7 @@ const (
 	gridS int = 64
 
 	StartEconomy uint32 = 300
-	StartHealth  uint8  = 1
+	StartHealth  uint8  = 10
 )
 
 var (
@@ -30,13 +30,15 @@ var (
 	AnimationFiendRun []pixel.Rect
 )
 
-// will be called before main()
 func init() {
 	TowerRaw, _ = loadPicture("assets/tower_left.png")
 	FiendRaw, _ = loadPicture("assets/cacodaemon.png")
 
 	for x := FiendRaw.Bounds().Min.X; x < 6*64; x += 64 {
-		AnimationFiendRun = append(AnimationFiendRun, pixel.R(x, 3*64, x+64, 4*64))
+		AnimationFiendRun = append(
+			AnimationFiendRun,
+			pixel.R(x, 3*64, x+64, 4*64),
+		)
 	}
 }
 
@@ -85,6 +87,7 @@ func Main() {
 
 			if win.JustPressed(pixelgl.KeyEnter) {
 				game = NewGame()
+				towers = make([]*Tower, 0)
 				gameOver = false
 			}
 
@@ -93,14 +96,40 @@ func Main() {
 
 		canvas.Clear(colornames.Forestgreen)
 
-		if win.JustPressed(pixelgl.MouseButtonLeft) {
-			if game.TrySpend(100) {
-				mouse := cam.Unproject(win.MousePosition())
-				tower := NewTower(
-					pixel.NewSprite(TowerRaw, TowerRaw.Bounds()),
-					pixel.IM.Moved(mouse),
+		if win.Pressed(pixelgl.MouseButtonLeft) {
+			mouse := win.MousePosition()
+			gpos, _, _, ok := game.TryExact(mouse)
+			cpos := cam.Unproject(gpos)
+
+			if ok {
+				gridPosition := pixel.V(
+					float64(int(cpos.X)/gridS)*float64(gridS),
+					float64(int(cpos.Y)/gridS)*float64(gridS),
 				)
-				towers = append(towers, tower)
+				NewTower(
+					pixel.NewSprite(TowerRaw, TowerRaw.Bounds()),
+					pixel.IM.Moved(gridPosition),
+				).Draw(canvas)
+			}
+		}
+
+		if win.JustReleased(pixelgl.MouseButtonLeft) {
+			if game.TrySpend(100) {
+				mouse := win.MousePosition()
+				gpos, _, _, ok := game.TryExact(mouse)
+				cpos := cam.Unproject(gpos)
+
+				if ok {
+					gridPosition := pixel.V(
+						float64(int(cpos.X)/gridS)*float64(gridS),
+						float64(int(cpos.Y)/gridS)*float64(gridS),
+					)
+					tower := NewTower(
+						pixel.NewSprite(TowerRaw, TowerRaw.Bounds()),
+						pixel.IM.Moved(gridPosition),
+					)
+					towers = append(towers, tower)
+				}
 			}
 		}
 

@@ -1,4 +1,4 @@
-#+TITLE: Gopher Gaming
+#+TITLE: Ridmarsh's Defense
 #+AUTHOR: Martin Penckert
 
 Minimal TD game written in Go (with the amazing [[https://github.com/faiface/pixel][Pixel]] game library).
@@ -56,15 +56,19 @@ limits of the screen. Towers (and other structure) cost money.
   - [x] Killing Fiends rewards money
   - [x] Balance visible in UI
 - [x] Canvas (640 x 480 world, however big the window is)
-- [ ] Grid
-  - [ ] Towers can only be placed on the Grid
+- [x] Grid
+  - [x] Towers can only be placed on the Grid
+  - [x] Only one tower can be placed per grid cell
   - [x] Fiends follow the Grid
-- [ ] Z-index for towers
 - [x] Game Over
 - [x] Game Restart
   
 ** Stretch
 
+- [ ] Pretty UI
+  - [ ] HealthBar
+  - [ ] Tower Selector (if more than one tower)
+  - [ ] Menu(?)
 - [ ] Projectiles
 - [ ] Waves
 - [ ] Tiles
@@ -75,6 +79,7 @@ limits of the screen. Towers (and other structure) cost money.
 - [ ] Make tower range grid based instead of radius
   - [ ] towers with directions? 
 - [ ] Animating fiends in 4 directions
+- [ ] Fiend Health Bar
 - [ ] Flying Fiends
   - [ ] Shadow
   - [ ] Moved Sprite
