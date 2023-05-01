@@ -11,7 +11,7 @@ import (
 type Fiend struct {
 	Matrix pixel.Matrix
 
-	Health uint8
+	Health float64
 
 	AnimTicker *time.Ticker
 	Sprites    []*pixel.Sprite
@@ -56,7 +56,7 @@ func (f *Fiend) Position() pixel.Vec {
 	return pixel.Vec{f.Matrix[4], f.Matrix[5]}
 }
 
-func (f *Fiend) Hit(dmg uint8) {
+func (f *Fiend) Hit(dmg float64) {
 	f.Health -= dmg
 }
 

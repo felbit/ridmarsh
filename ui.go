@@ -23,7 +23,7 @@ func NewUI() *UI {
 	)
 	atlas := text.NewAtlas(basicfont.Face7x13, text.ASCII)
 	label := text.New(orig, atlas)
-	label.Color = colornames.Darkgoldenrod
+	label.Color = colornames.Antiquewhite
 
 	loudMessage := text.New(pixel.ZV, atlas)
 	loudMessage.Color = colornames.Crimson
