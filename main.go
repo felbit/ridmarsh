@@ -6,17 +6,47 @@ import (
 	"log"
 	"math"
 	"os"
-	"time"
 
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"golang.org/x/image/colornames"
 )
 
+const (
+	gridW int = 16
+	gridH int = 9
+	gridS int = 64
+
+	StartEconomy uint32 = 300
+	StartHealth  uint8  = 1
+)
+
+var (
+	screenW, screenH  float64
+	gameOver          bool
+	cam               pixel.Matrix
+	FiendRaw          pixel.Picture
+	TowerRaw          pixel.Picture
+	AnimationFiendRun []pixel.Rect
+)
+
+// will be called before main()
+func init() {
+	TowerRaw, _ = loadPicture("assets/tower_left.png")
+	FiendRaw, _ = loadPicture("assets/cacodaemon.png")
+
+	for x := FiendRaw.Bounds().Min.X; x < 6*64; x += 64 {
+		AnimationFiendRun = append(AnimationFiendRun, pixel.R(x, 3*64, x+64, 4*64))
+	}
+}
+
 func Main() {
+	screenW = float64(gridW * gridS)
+	screenH = float64(gridH * gridS)
+
 	cfg := pixelgl.WindowConfig{
-		Title:     "Ridmarsh - A Ravensong Saga",
-		Bounds:    pixel.R(0, 0, 900, 450),
+		Title:     "Ridmarsh TD",
+		Bounds:    pixel.R(0, 0, screenW, screenH),
 		VSync:     true,
 		Resizable: true,
 	}
@@ -26,87 +56,90 @@ func Main() {
 	}
 	win.SetSmooth(true)
 
-	// canvas := pixelgl.NewCanvas(pixel.R(-320, -240, 320, 240))
+	ui := NewUI()
 
-	towerRaw, _ := loadPicture("assets/tower_left.png")
-	daemonRaw, _ := loadPicture("assets/cacodaemon.png")
-
-	var DaemonAnimRun []pixel.Rect
-	for x := daemonRaw.Bounds().Min.X; x < 6*64; x += 64 {
-		DaemonAnimRun = append(DaemonAnimRun, pixel.R(x, 3*64, x+64, 4*64))
-	}
+	canvas := pixelgl.NewCanvas(pixel.R(
+		-screenW/2, -screenH/2,
+		screenW/2, screenH/2,
+	))
 
 	var (
-		camPos       = pixel.ZV
-		camZoom      = 1.0
-		camZoomSpeed = 1.2
-		towers       []*Tower
-		daemons      []*Daemon
+		towers []*Tower
 	)
 
-	tick := 0
-	last := time.Now()
+	game := NewGame()
+	gameOver = false
+
+	// last := time.Now()
 	for !win.Closed() {
-		delta := time.Since(last).Seconds()
-		last = time.Now()
-		_ = delta
+		// delta := time.Since(last).Seconds()
+		// last = time.Now()
 
-		cam := pixel.IM.Scaled(camPos, camZoom).Moved(win.Bounds().Center().Sub(camPos))
-		win.SetMatrix(cam)
+		win.Clear(colornames.Forestgreen)
+		if gameOver {
+			canvas.Clear(colornames.Crimson)
+			ui.GameOver(canvas)
+			win.SetMatrix(cam)
+			canvas.Draw(win, pixel.IM.Moved(canvas.Bounds().Center()))
+			win.Update()
 
-		camZoom *= math.Pow(camZoomSpeed, win.MouseScroll().Y)
+			if win.JustPressed(pixelgl.KeyEnter) {
+				game = NewGame()
+				gameOver = false
+			}
+
+			continue
+		}
+
+		canvas.Clear(colornames.Forestgreen)
 
 		if win.JustPressed(pixelgl.MouseButtonLeft) {
-			mouse := cam.Unproject(win.MousePosition())
-			tower := NewTower(
-				pixel.NewSprite(towerRaw, towerRaw.Bounds()),
-				pixel.IM.Moved(mouse),
-			)
-			towers = append(towers, tower)
-		}
-
-		if win.JustPressed(pixelgl.MouseButtonRight) {
-			mouse := cam.Unproject(win.MousePosition())
-			sprites := make([]*pixel.Sprite, 0, 6)
-			for _, r := range DaemonAnimRun {
-				sprites = append(sprites, pixel.NewSprite(daemonRaw, r))
+			if game.TrySpend(100) {
+				mouse := cam.Unproject(win.MousePosition())
+				tower := NewTower(
+					pixel.NewSprite(TowerRaw, TowerRaw.Bounds()),
+					pixel.IM.Moved(mouse),
+				)
+				towers = append(towers, tower)
 			}
-			daemon := NewDaemon(
-				sprites,
-				pixel.IM.Moved(mouse),
-			)
-			daemons = append(daemons, daemon)
 		}
-
-		win.Clear(colornames.Greenyellow)
 
 		for _, tower := range towers {
 			tpos := pixel.V(tower.Matrix[4], tower.Matrix[5])
-			for _, d := range daemons {
-				dpos := pixel.V(d.Matrix[4], d.Matrix[5])
-				dist := distance(tpos, dpos)
+			for _, fiend := range game.fiends {
+				fpos := pixel.V(fiend.Matrix[4], fiend.Matrix[5])
+				dist := distance(tpos, fpos)
 				if dist < 150 && tower.Shoot() {
 					log.Println("BOOM!")
-					d.Hit(10)
+					fiend.Hit(10)
 				}
 			}
-			tower.Draw(win)
+			tower.Draw(canvas)
 		}
 
-		for i, daemon := range daemons {
-			if daemon.IsDead() {
-				ds := daemons[:i]
-				if len(daemons) > i+1 {
-					ds = append(ds, daemons[i+1:]...)
-				}
-				daemons = ds
-				continue
-			}
-			daemon.Update(tick)
-			daemon.Draw(win)
+		game.Update(win)
+		game.Draw(canvas)
+		if game.health <= 0 {
+			gameOver = true
 		}
+
+		ui.Update(int(game.health), int(game.economy), len(game.fiends))
+		ui.Draw(canvas)
+
+		// stretch canvas to the window bounds
+		cam = pixel.IM.Scaled(
+			pixel.ZV,
+			math.Min(
+				win.Bounds().W()/canvas.Bounds().W(),
+				win.Bounds().H()/canvas.Bounds().H(),
+			)).Moved(win.Bounds().Center())
+
+		win.Clear(colornames.Forestgreen)
+		win.SetMatrix(cam)
+		canvas.Draw(win, pixel.IM.Moved(canvas.Bounds().Center()))
 		win.Update()
-		tick++
+
+		game.tick++
 	}
 }
 

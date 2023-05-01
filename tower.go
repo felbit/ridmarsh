@@ -16,7 +16,7 @@ type Tower struct {
 	Matrix pixel.Matrix
 	Sprite *pixel.Sprite
 
-	Target     *Daemon
+	Target     *Fiend
 	ShotTicker *time.Ticker
 	Range      float64
 }

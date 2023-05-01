@@ -1,12 +1,14 @@
 package main
 
 import (
+	"log"
+	"math/rand"
 	"time"
 
 	"github.com/faiface/pixel"
 )
 
-type Daemon struct {
+type Fiend struct {
 	Matrix pixel.Matrix
 
 	Health uint8
@@ -16,37 +18,48 @@ type Daemon struct {
 	AnimStep   uint8 // next drawing
 }
 
-func NewDaemon(s []*pixel.Sprite, m pixel.Matrix) *Daemon {
+func NewFiend() *Fiend {
+	// random location
+	y := float64(rand.Intn(gridH)-gridH/2) * float64(gridS)
+	log.Println("Y:", y)
+	sprites := make([]*pixel.Sprite, 0, 6)
+	for _, r := range AnimationFiendRun {
+		sprites = append(sprites, pixel.NewSprite(FiendRaw, r))
+	}
 	at := time.NewTicker(1000 / 12 * time.Millisecond)
-	return &Daemon{
-		Matrix:     m,
+	return &Fiend{
+		Matrix:     pixel.IM.Moved(pixel.V(-float64(gridW*gridS/2), y)),
 		Health:     20,
 		AnimTicker: at,
-		Sprites:    s,
+		Sprites:    sprites,
 		AnimStep:   0,
 	}
 }
 
-func (d *Daemon) Draw(t pixel.Target) {
-	d.Sprites[d.AnimStep].Draw(t, d.Matrix)
+func (f *Fiend) Draw(t pixel.Target) {
+	f.Sprites[f.AnimStep].Draw(t, f.Matrix)
 }
 
-func (d *Daemon) Update(tick int) error {
-	d.Matrix = d.Matrix.Moved(pixel.V(1.4, 0))
+func (f *Fiend) Update(tick uint64) error {
+	f.Matrix = f.Matrix.Moved(pixel.V(1.4, 0))
 	select {
-	case <-d.AnimTicker.C:
-		d.AnimStep++
-		d.AnimStep %= uint8(len(d.Sprites))
+	case <-f.AnimTicker.C:
+		f.AnimStep++
+		f.AnimStep %= uint8(len(f.Sprites))
 
 	default:
 	}
 	return nil
 }
 
-func (d *Daemon) Hit(dmg uint8) {
-	d.Health -= dmg
+func (f *Fiend) Position() pixel.Vec {
+	return pixel.Vec{f.Matrix[4], f.Matrix[5]}
 }
 
-func (d *Daemon) IsDead() bool {
-	return d.Health <= 0
+func (f *Fiend) Hit(dmg uint8) {
+	f.Health -= dmg
+}
+
+func (f *Fiend) IsDead() bool {
+	return f.Health <= 0
 }
